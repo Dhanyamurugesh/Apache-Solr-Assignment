@@ -17,10 +17,9 @@ This project provides an employee directory application that uses Apache Solr fo
 
 - [Node.js](https://nodejs.org/en/download/) installed
 - [Apache Solr](https://solr.apache.org/downloads.html) installed and running
-- [Python](https://www.python.org/downloads/) (if using Python for CSV to JSON conversion)
 
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/employee-directory.git
-cd employee-directory
+git clone https://github.com/Dhanyamurugesh/Apache-Solr-Assignment
+cd Apache-Solr-Assignment
