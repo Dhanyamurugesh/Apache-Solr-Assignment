@@ -8,14 +8,15 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const SOLR_URL = 'http://localhost:8983/solr'; // Adjust based on your Solr setup
+const SOLR_URL = 'http://localhost:8000/solr'; // Adjust based on your Solr setup
+
 
 // Function to create a collection
 app.post('/createCollection', async (req, res) => {
-    const { collectionName } = req.body;
+    const { name } = req.body;
     try {
-        await axios.post(`${SOLR_URL}/admin/collections?action=CREATE&name=${collectionName}`);
-        res.send(`Collection ${collectionName} created.`);
+        await axios.post(`${SOLR_URL}/admin/collections?action=CREATE&name=${name}&numShards=1&replicationFactor=1&maxShardsPerNode=1`);
+        res.send(`Collection ${name} created.`);
     } catch (error) {
         res.status(500).send(error.response.data);
     }
@@ -23,7 +24,7 @@ app.post('/createCollection', async (req, res) => {
 
 // Function to index data
 app.post('/indexData', async (req, res) => {
-    const { collectionName, excludeColumn } = req.body;
+    const { name, excludeColumn } = req.body;
     const data = require('./employee_data.json'); // Load your JSON data here
 
     // Prepare data excluding the specified column
@@ -33,7 +34,7 @@ app.post('/indexData', async (req, res) => {
     });
 
     try {
-        await axios.post(`${SOLR_URL}/${collectionName}/update?commit=true`, indexedData);
+        await axios.post(`${SOLR_URL}/${name}/update?commit=true`, indexedData);
         res.send('Data indexed successfully.');
     } catch (error) {
         res.status(500).send(error.response.data);
@@ -41,10 +42,10 @@ app.post('/indexData', async (req, res) => {
 });
 
 // Function to search by column
-app.get('/searchByColumn', async (req, res) => {
-    const { collectionName, columnName, columnValue } = req.query;
+app.post('/searchByColumn', async (req, res) => {
+    const { name, column, value } = req.body;
     try {
-        const response = await axios.get(`${SOLR_URL}/${collectionName}/select?q=${columnName}:${columnValue}`);
+        const response = await axios.get(`${SOLR_URL}/${name}/select?q=${column}:${value}`);
         res.json(response.data.response.docs);
     } catch (error) {
         res.status(500).send(error.response.data);
@@ -52,10 +53,10 @@ app.get('/searchByColumn', async (req, res) => {
 });
 
 // Function to get employee count
-app.get('/getEmpCount/:collectionName', async (req, res) => {
-    const { collectionName } = req.params;
+app.post('/getEmpCount', async (req, res) => {
+    const { name } = req.body;
     try {
-        const response = await axios.get(`${SOLR_URL}/${collectionName}/select?q=*:*&rows=0`);
+        const response = await axios.get(`${SOLR_URL}/${name}/select?q=*:*&rows=0`);
         res.json({ count: response.data.response.numFound });
     } catch (error) {
         res.status(500).send(error.response.data);
@@ -63,21 +64,21 @@ app.get('/getEmpCount/:collectionName', async (req, res) => {
 });
 
 // Function to delete employee by ID
-app.delete('/delEmpById/:collectionName/:employeeId', async (req, res) => {
-    const { collectionName, employeeId } = req.params;
+app.post('/delEmpById', async (req, res) => {
+    const { name, id } = req.body;
     try {
-        await axios.post(`${SOLR_URL}/${collectionName}/update?commit=true`, [{ delete: { id: employeeId } }]);
-        res.send(`Employee ${employeeId} deleted.`);
+        await axios.post(`${SOLR_URL}/${name}/update?commit=true`, [{ delete: { id: id } }]);
+        res.send(`Employee ${id} deleted.`);
     } catch (error) {
         res.status(500).send(error.response.data);
     }
 });
 
 // Function to get department facets
-app.get('/getDepFacet/:collectionName', async (req, res) => {
-    const { collectionName } = req.params;
+app.post('/getDepFacet', async (req, res) => {
+    const { name } = req.body;
     try {
-        const response = await axios.get(`${SOLR_URL}/${collectionName}/select?q=*:*&facet=true&facet.field=Department`);
+        const response = await axios.get(`${SOLR_URL}/${name}/select?q=*:*&facet=true&facet.field=Department`);
         res.json(response.data.facet_counts.facet_fields.Department);
     } catch (error) {
         res.status(500).send(error.response.data);
